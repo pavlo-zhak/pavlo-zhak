@@ -295,5 +295,16 @@ class Comment_model extends CI_Emerald_Model
         return $this->get_likes();
     }
 
+    public static function get_all_by_replay_id(int $reply_id)
+    {
+        $data = App::get_ci()->s->from(self::CLASS_TABLE)->where(['reply_id' => $reply_id])->orderBy('time_created','ASC')->many();
+        $ret = [];
+        foreach ($data as $i)
+        {
+            $ret[] = (new self())->set($i);
+        }
+        return $ret;
+    }
+
 
 }

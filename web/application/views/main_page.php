@@ -38,6 +38,13 @@
               </button>
             <? }?>
         </li>
+        <li class="nav-item">
+            <?  if (User_model::is_logged()) {?>
+                <a href="" role="button">
+                    Likes:
+                </a>
+            <? }?>
+        </li>
       </div>
 <!--      <div class="collapse navbar-collapse" id="navbarTogglerDemo01">-->
 <!--        <li class="nav-item">-->

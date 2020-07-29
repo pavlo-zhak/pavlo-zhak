@@ -124,4 +124,41 @@ class Boosterpack_model extends CI_Emerald_Model
         return (App::get_ci()->s->get_affected_rows() > 0);
     }
 
+    public static function get_booster_pack($id)
+    {
+        return new self($id);
+    }
+
+    public static function open_booster_pack($id)
+    {
+        $boosterpack = self::get_booster_pack($id);
+        $likes_to_user = random_int(1, intval($boosterpack->get_price() + $boosterpack->get_bank()));
+        $profit_bank_diff = $boosterpack->get_price() - $likes_to_user;
+        if($boosterpack->get_bank() === 0) $boosterpack->set_bank($profit_bank_diff);
+        if($boosterpack->get_bank() < $profit_bank_diff) $boosterpack->set_bank(0);
+        $boosterpack->set_bank(
+            $boosterpack->get_bank() - $profit_bank_diff
+        );
+        $user = User_model::get_user();
+        $user->set_wallet_balance(
+            $user->get_wallet_balance() - $boosterpack->get_price()
+        );
+        $user->set_wallet_total_withdrawn(
+            $user->get_wallet_total_withdrawn() + $boosterpack->get_price()
+        );
+        $user->set_likes_balance(
+            $user->get_likes_balance() + $likes_to_user
+        );
+
+        Analytics_model::create([
+            'user_id' => $user->get_id(),
+            'object' => 'boosterpack',
+            'action' => 'buy',
+            'object_id' => $id,
+            'amount' => 1
+        ]);
+
+        return $likes_to_user;
+    }
+
 }

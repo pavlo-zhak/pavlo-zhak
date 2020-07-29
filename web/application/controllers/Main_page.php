@@ -16,6 +16,8 @@ class Main_page extends MY_Controller
         App::get_ci()->load->model('User_model');
         App::get_ci()->load->model('Login_model');
         App::get_ci()->load->model('Post_model');
+        App::get_ci()->load->model('Boosterpack_model');
+        App::get_ci()->load->model('Analytics_model');
 
         if (is_prod())
         {
@@ -67,10 +69,13 @@ class Main_page extends MY_Controller
 
         $post_id = App::get_ci()->input->post('postId');
         $comment_text = App::get_ci()->input->post('commentText');
+        $replay_to = App::get_ci()->input->post('replay_to');
 
         if (empty($post_id) || empty($comment_text)){
             return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
         }
+
+        if(!$replay_to) $replay_to = null;
 
         try
         {
@@ -78,14 +83,13 @@ class Main_page extends MY_Controller
                 'user_id' => User_model::get_session_id(),
                 'assign_id' => $post_id,
                 'text' => $comment_text,
+                'reply_id' => $replay_to,
             ]);
 
         } catch (EmeraldModelNoDataException $ex){
             return $this->response_error(CI_Core::RESPONSE_GENERIC_NO_DATA);
         }
 
-
-//        $posts =  Post_model::preparation($post, 'full_info');
         return $this->response_success(['comment_id' => $inserted_comment_id]);
     }
 
@@ -100,7 +104,9 @@ class Main_page extends MY_Controller
         // login or password cannot be empty
         if(!$login_params_from_client->login || !$login_params_from_client->password) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
 
+        // Find user by email
         $user = User_model::find_user(['email' => $login_params_from_client->login]);
+        // If password check is success - authorize user
         if($user->get_password() !== $login_params_from_client->password) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
 
         Login_model::start_session($user->get_id());
@@ -116,11 +122,14 @@ class Main_page extends MY_Controller
     }
 
     public function add_money(){
+        // Check user is authorize
         if (!User_model::is_logged()) return $this->response_error(CI_Core::RESPONSE_GENERIC_NEED_AUTH);
 
+        // Get sum from client
         $sum = App::get_ci()->input->post('sum');
         if(!$sum) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
 
+        // Add sum to user wallet balance
         $user = User_model::get_user();
         $user->set_wallet_balance(
           $user->get_wallet_balance() + $sum
@@ -129,22 +138,46 @@ class Main_page extends MY_Controller
             $user->get_wallet_total_refilled() + $sum
         );
 
+        Analytics_model::create([
+            'user_id' => $user->get_id(),
+            'object' => 'wallet',
+            'action' => 'replenishment',
+            'amount' => $sum
+        ]);
+
         return $this->response_success(['amount' => $user->get_wallet_balance()]);
     }
 
     public function buy_boosterpack(){
-        // todo: add money to user logic
-        return $this->response_success(['amount' => rand(1,55)]);
+        // Check user is authorize
+        if (!User_model::is_logged()) return $this->response_error(CI_Core::RESPONSE_GENERIC_NEED_AUTH);
+
+        // Get booster pack Id and load instance
+        $boosterpack_id = App::get_ci()->input->post('id');
+        if(!$boosterpack_id) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
+        $boosterpack = new Boosterpack_model($boosterpack_id);
+
+        // Check user wallet balance
+        $user = User_model::get_user();
+        if($user->get_wallet_balance() < $boosterpack->get_price()) return $this->response_error('not enough money on balance');
+
+        // Open booster pack and return likes count
+        $likes_from_booster_pack = Boosterpack_model::open_booster_pack($boosterpack_id);
+
+        return $this->response_success(['amount' => $likes_from_booster_pack]);
     }
 
 
     public function like($object_type, $object_id){
+        // Check user is authorize
         if (!User_model::is_logged()) return $this->response_error(CI_Core::RESPONSE_GENERIC_NEED_AUTH);
 
+        // object_type - is a parameter that describes the type of object to which likes should be added (comment or post)
         $likes = null;
         if(!$object_type || !$object_id) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
         $user = User_model::get_user();
-        if ($user->get_likes_balance() == 0) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS, 'no likes on balance');
+        // Check user "likes" balance
+        if ($user->get_likes_balance() == 0) return $this->response_error('no likes on balance');
         switch ($object_type)
         {
             case 'post':
@@ -155,6 +188,8 @@ class Main_page extends MY_Controller
                 $comment = new Comment_model($object_id);
                 $likes = $comment->increment_comment_likes();
                 break;
+            default:
+                throw new Exception('undefined object type');
         }
 
         return $this->response_success(['likes' => $likes]); // Колво лайков под постом \ комментарием чтобы обновить

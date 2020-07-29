@@ -132,9 +132,9 @@ var app = new Vue({
 		},
 		buyPack: function (id) {
 			var self= this;
-			axios.post('/main_page/buy_boosterpack', {
-				id: id,
-			})
+			var pack = new FormData();
+			pack.append('id', id);
+			axios.post('/main_page/buy_boosterpack', pack)
 				.then(function (response) {
 					self.amount = response.data.amount
 					if(self.amount !== 0){
