@@ -22,6 +22,8 @@ class User_model extends CI_Emerald_Model {
     protected $avatarfull;
     /** @var int */
     protected $rights;
+    /** @var int */
+    protected $likes_balance;
     /** @var float */
     protected $wallet_balance;
     /** @var float */
@@ -129,6 +131,17 @@ class User_model extends CI_Emerald_Model {
     {
         $this->rights = $rights;
         return $this->save('rights', $rights);
+    }
+
+    public function get_likes_balance(): Int
+    {
+        return $this->likes_balance;
+    }
+
+    public function set_likes_balance($likes_balance)
+    {
+        $this->likes_balance = $likes_balance;
+        return $this->save('likes_balance', $likes_balance);
     }
 
     /**

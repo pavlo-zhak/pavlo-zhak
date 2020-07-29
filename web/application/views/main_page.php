@@ -159,7 +159,7 @@
           <div class="card mb-3">
             <div class="post-img" v-bind:style="{ backgroundImage: 'url(' + post.img + ')' }"></div>
             <div class="card-body">
-              <div class="likes" @click="addLike(post.id)">
+              <div class="likes" @click="addLike('post', post.id)">
                 <div class="heart-wrap" v-if="!likes">
                   <div class="heart">
                     <svg class="bi bi-heart" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -177,7 +177,16 @@
                   <span>{{likes}}</span>
                 </div>
               </div>
-              <p class="card-text" v-for="comment in post.coments"> {{comment.user.personaname + ' - '}}<small class="text-muted">{{comment.text}}</small></p>
+              <p class="card-text" v-for="comment in post.coments">
+                  {{comment.user.personaname + ' - '}}
+                  <small class="text-muted">{{comment.text}}</small>
+                  <a role="button" @click="addLike('comment', comment.id)">
+                      <svg class="bi bi-heart-fill" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                          <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z" clip-rule="evenodd"/>
+                      </svg>
+                      {{ comment.likes }}
+                  </a>
+              </p>
               <form class="form-inline">
                 <div class="form-group">
                   <input type="text" class="form-control" id="addComment" v-model="commentText">

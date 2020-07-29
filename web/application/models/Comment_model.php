@@ -17,6 +17,8 @@ class Comment_model extends CI_Emerald_Model
     protected $assing_id;
     /** @var string */
     protected $text;
+    /** @var int */
+    protected $reply_id;
 
     /** @var string */
     protected $time_created;
@@ -126,15 +128,43 @@ class Comment_model extends CI_Emerald_Model
         return $this->save('time_updated', $time_updated);
     }
 
-    // generated
-
     /**
-     * @return mixed
+     * @return Int|null
      */
     public function get_likes()
     {
         return $this->likes;
     }
+
+    /**
+     * @param int $likes
+     * @return bool
+     */
+    public function set_likes(int $likes)
+    {
+        $this->likes = $likes;
+        return $this->save('likes', $likes);
+    }
+
+    /**
+     * @return Int
+     */
+    public function get_reply_id(): Int
+    {
+        return $this->reply_id;
+    }
+
+    /**
+     * @param int $reply_id
+     * @return bool
+     */
+    public function set_reply_id(int $reply_id)
+    {
+        $this->reply_id = $reply_id;
+        return $this->save('reply_id', $reply_id);
+    }
+
+    // generated
 
     /**
      * @return mixed
@@ -242,7 +272,7 @@ class Comment_model extends CI_Emerald_Model
 
             $o->user = User_model::preparation($d->get_user(),'main_page');
 
-            $o->likes = rand(0, 25);
+            $o->likes = $d->get_likes();
 
             $o->time_created = $d->get_time_created();
             $o->time_updated = $d->get_time_updated();
@@ -252,6 +282,17 @@ class Comment_model extends CI_Emerald_Model
 
 
         return $ret;
+    }
+
+    /**
+     * @return Int
+     */
+    public function increment_comment_likes()
+    {
+        $this->set_likes(
+            $this->get_likes() + 1
+        );
+        return $this->get_likes();
     }
 
 

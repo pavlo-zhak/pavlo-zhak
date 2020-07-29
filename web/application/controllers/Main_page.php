@@ -116,8 +116,20 @@ class Main_page extends MY_Controller
     }
 
     public function add_money(){
-        // todo: add money to user logic
-        return $this->response_success(['amount' => rand(1,55)]);
+        if (!User_model::is_logged()) return $this->response_error(CI_Core::RESPONSE_GENERIC_NEED_AUTH);
+
+        $sum = App::get_ci()->input->post('sum');
+        if(!$sum) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
+
+        $user = User_model::get_user();
+        $user->set_wallet_balance(
+          $user->get_wallet_balance() + $sum
+        );
+        $user->set_wallet_total_refilled(
+            $user->get_wallet_total_refilled() + $sum
+        );
+
+        return $this->response_success(['amount' => $user->get_wallet_balance()]);
     }
 
     public function buy_boosterpack(){
@@ -126,9 +138,26 @@ class Main_page extends MY_Controller
     }
 
 
-    public function like(){
-        // todo: add like post\comment logic
-        return $this->response_success(['likes' => rand(1,55)]); // Колво лайков под постом \ комментарием чтобы обновить
+    public function like($object_type, $object_id){
+        if (!User_model::is_logged()) return $this->response_error(CI_Core::RESPONSE_GENERIC_NEED_AUTH);
+
+        $likes = null;
+        if(!$object_type || !$object_id) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
+        $user = User_model::get_user();
+        if ($user->get_likes_balance() == 0) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS, 'no likes on balance');
+        switch ($object_type)
+        {
+            case 'post':
+                $post = new Post_model($object_id);
+                $likes = $post->increment_post_likes();
+                break;
+            case 'comment':
+                $comment = new Comment_model($object_id);
+                $likes = $comment->increment_comment_likes();
+                break;
+        }
+
+        return $this->response_success(['likes' => $likes]); // Колво лайков под постом \ комментарием чтобы обновить
     }
 
 }

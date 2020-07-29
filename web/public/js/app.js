@@ -98,9 +98,9 @@ var app = new Vue({
 			}
 			else{
 				self.invalidSum = false
-				axios.post('/main_page/add_money', {
-					sum: self.addSum,
-				})
+				sum = new FormData();
+				sum.append('sum', self.addSum);
+				axios.post('/main_page/add_money', sum)
 					.then(function (response) {
 						setTimeout(function () {
 							$('#addModal').modal('hide');
@@ -121,10 +121,10 @@ var app = new Vue({
 					}
 				})
 		},
-		addLike: function (id) {
+		addLike: function (type, id) {
 			var self= this;
 			axios
-				.get('/main_page/like')
+				.get('/main_page/like/' + type + '/' + id)
 				.then(function (response) {
 					self.likes = response.data.likes;
 				})
