@@ -57,16 +57,39 @@ var app = new Vue({
 			else{
 				self.invalidLogin = false
 				self.invalidPass = false
-				axios.post('/main_page/login', {
-					login: self.login,
-					password: self.pass
-				})
+
+				form = new FormData();
+				form.append("login", self.login);
+				form.append("password", self.pass);
+
+				axios.post('/main_page/login', form)
 					.then(function (response) {
+						if(response.data.user) {
+							// TODO: Change hard reload to more beautiful solution
+							location.reload();
+						}
 						setTimeout(function () {
 							$('#loginModal').modal('hide');
 						}, 500);
 					})
 			}
+		},
+		addComment: function(id) {
+			var self = this;
+			if(self.commentText) {
+
+				var comment = new FormData();
+				comment.append('postId', id);
+				comment.append('commentText', self.commentText);
+
+				axios.post(
+					'/main_page/comment',
+					comment
+				).then(function () {
+
+				});
+			}
+
 		},
 		fiilIn: function () {
 			var self= this;

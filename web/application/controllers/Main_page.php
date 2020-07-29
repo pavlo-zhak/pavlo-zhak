@@ -59,48 +59,53 @@ class Main_page extends MY_Controller
     }
 
 
-    public function comment($post_id,$message){ // or can be App::get_ci()->input->post('news_id') , but better for GET REQUEST USE THIS ( tests )
+    public function comment(){ // or can be App::get_ci()->input->post('news_id') , but better for GET REQUEST USE THIS ( tests )
 
         if (!User_model::is_logged()){
             return $this->response_error(CI_Core::RESPONSE_GENERIC_NEED_AUTH);
         }
 
-        $post_id = intval($post_id);
+        $post_id = App::get_ci()->input->post('postId');
+        $comment_text = App::get_ci()->input->post('commentText');
 
-        if (empty($post_id) || empty($message)){
+        if (empty($post_id) || empty($comment_text)){
             return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
         }
 
         try
         {
-            $post = new Post_model($post_id);
+            $inserted_comment_id = Comment_model::create([
+                'user_id' => User_model::get_session_id(),
+                'assign_id' => $post_id,
+                'text' => $comment_text,
+            ]);
+
         } catch (EmeraldModelNoDataException $ex){
             return $this->response_error(CI_Core::RESPONSE_GENERIC_NO_DATA);
         }
 
 
-        $posts =  Post_model::preparation($post, 'full_info');
-        return $this->response_success(['post' => $posts]);
+//        $posts =  Post_model::preparation($post, 'full_info');
+        return $this->response_success(['comment_id' => $inserted_comment_id]);
     }
 
 
-    public function login($user_id)
+    public function login()
     {
-        // Right now for tests:
-        $post_id = intval($user_id);
+        // Get login and password from client side
+        $login_params_from_client = new stdClass();
+        $login_params_from_client->login = App::get_ci()->input->post("login");
+        $login_params_from_client->password = App::get_ci()->input->post("password");
 
-        if (empty($post_id)){
-            return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
-        }
+        // login or password cannot be empty
+        if(!$login_params_from_client->login || !$login_params_from_client->password) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
 
-        // But data from modal window sent by POST request.  App::get_ci()->input...  to get it.
+        $user = User_model::find_user(['email' => $login_params_from_client->login]);
+        if($user->get_password() !== $login_params_from_client->password) return $this->response_error(CI_Core::RESPONSE_GENERIC_WRONG_PARAMS);
 
+        Login_model::start_session($user->get_id());
 
-        //Todo: Authorisation
-
-        Login_model::start_session($user_id);
-
-        return $this->response_success(['user' => $user_id]);
+        return $this->response_success(['user' => $user->get_id()]);
     }
 
 
