@@ -21,7 +21,7 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
         <li class="nav-item">
-            <?  if (User_model::is_logged()) {?>
+            <? if (User_model::is_logged()) {?>
               <a href="/main_page/logout" class="btn btn-primary my-2 my-sm-0"
                  data-target="#loginModal">Log out, <?= $user->personaname?>
               </a>
@@ -182,7 +182,7 @@
                 <div class="form-group">
                   <input type="text" class="form-control" id="addComment" v-model="commentText">
                 </div>
-                <button type="submit" class="btn btn-primary">Add comment</button>
+                <button type="button" class="btn btn-primary" @click="addComment(post.id)">Add comment</button>
               </form>
             </div>
           </div>

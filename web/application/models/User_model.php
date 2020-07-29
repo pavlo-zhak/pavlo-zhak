@@ -269,6 +269,15 @@ class User_model extends CI_Emerald_Model {
         return $ret;
     }
 
+    /**
+     * @param $where
+     * @return User_model
+     */
+    public static function find_user($where)
+    {
+        $user = App::get_ci()->s->from(self::CLASS_TABLE)->where($where)->one();
+        return (new self())->set($user);
+    }
 
     /**
      * @param User_model|User_model[] $data
