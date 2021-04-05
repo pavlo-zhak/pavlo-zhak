@@ -146,7 +146,7 @@ class CI_Controller {
      */
     public function response_success(array $data = [], int $http_code = 200)
     {
-        $data['status'] = CI_Core::RESPONSE_STATUS_SUCCESS;
+        $data['status'] = Core::RESPONSE_STATUS_SUCCESS;
         App::get_ci()->output->set_status_header($http_code);
         App::get_ci()->output->set_content_type('application/json')->set_output(json_encode($data));
         return;
@@ -159,7 +159,7 @@ class CI_Controller {
      */
     public function response_info(array $data = [], int $http_code = 200)
     {
-        $data['status'] = CI_Core::RESPONSE_STATUS_INFO;
+        $data['status'] = Core::RESPONSE_STATUS_INFO;
         App::get_ci()->output->set_status_header($http_code);
         App::get_ci()->output->set_content_type('application/json')->set_output(json_encode($data));
         return;
@@ -173,7 +173,7 @@ class CI_Controller {
      */
     public function response_error(string $error_message = 'error_core_internal', $data = [], int $http_code = 200)
     {
-        $data['status'] = CI_Core::RESPONSE_STATUS_ERROR;
+        $data['status'] = Core::RESPONSE_STATUS_ERROR;
         $data['error_message'] = $error_message;
         App::get_ci()->output->set_status_header($http_code);
         App::get_ci()->output->set_content_type('application/json')->set_output(json_encode($data));

@@ -35,6 +35,9 @@
  * @since	Version 1.0.0
  * @filesource
  */
+
+use System\Libraries\Core;
+
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /**
@@ -999,7 +1002,7 @@ if ( ! function_exists('cli_response_success'))
      */
     function cli_response_success($data)
     {
-        $data['status'] = CI_Core::RESPONSE_STATUS_SUCCESS;
+        $data['status'] = Core::RESPONSE_STATUS_SUCCESS;
         cli_response($data);
     }
 }
@@ -1012,7 +1015,7 @@ if ( ! function_exists('cli_response_error'))
      */
     function cli_response_error($error_message = 'error_core_internal', $data = [])
     {
-        $data['status'] = CI_Core::RESPONSE_STATUS_ERROR;
+        $data['status'] = Core::RESPONSE_STATUS_ERROR;
         $data['error_message'] = $error_message;
         cli_response($data);
 
@@ -1028,7 +1031,7 @@ if ( ! function_exists('response_success'))
      */
     function response_success($data = [])
     {
-        $data['status'] = CI_Core::RESPONSE_STATUS_SUCCESS;
+        $data['status'] = Core::RESPONSE_STATUS_SUCCESS;
         return $data;
     }
 }
@@ -1041,7 +1044,7 @@ if ( ! function_exists('response_error'))
      */
     function response_error($error_message = '', $data = [])
     {
-        $data['status'] = CI_Core::RESPONSE_STATUS_ERROR;
+        $data['status'] = Core::RESPONSE_STATUS_ERROR;
         $data['error_message'] = $error_message;
         return $data;
     }

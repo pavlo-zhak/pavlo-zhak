@@ -68,6 +68,13 @@ define('CI_VERSION', '3.1.0');
 
 /*
  * ------------------------------------------------------
+ *  Magic the framework PSR-4 Autoload!
+ * ------------------------------------------------------
+ */
+
+
+/*
+ * ------------------------------------------------------
  *  Magic the framework config files finder!
  * ------------------------------------------------------
  */
@@ -110,12 +117,6 @@ function find_config_files_path($file)
         ENVIRONMENT . DIRECTORY_SEPARATOR . $file,
     ];
 
-    if (defined('IS_GLOBAL_CONFIG') && IS_GLOBAL_CONFIG == TRUE)
-    {
-        $paths[] = 'global' . DIRECTORY_SEPARATOR . $file;
-        $paths[] = 'global' . DIRECTORY_SEPARATOR . ENVIRONMENT . DIRECTORY_SEPARATOR . $file;
-    }
-
     if (defined('PROJECT_CONFIG_PATH') && ! empty(PROJECT_CONFIG_PATH))
     {
         $paths[] = PROJECT_CONFIG_PATH . $file;
@@ -130,6 +131,13 @@ function find_config_files_path($file)
  * ------------------------------------------------------
  */
 find_constants('constants');
+
+/*
+ * ------------------------------------------------------
+ *  Autoloader
+ * ------------------------------------------------------
+ */
+require_once(BASEPATH . 'core/PSR.php');
 
 /*
  * ------------------------------------------------------
@@ -194,6 +202,10 @@ if ( ! is_php('5.4'))
  *  Define a custom error handler so we can log PHP errors
  * ------------------------------------------------------
  */
+if ( ! is_prod())
+{
+    set_exception_handler('\System\Emerald\Emerald_model_exception_handler::exception_handler');
+}
 //set_error_handler('_error_handler');
 //set_exception_handler('_exception_handler');
 //register_shutdown_function('_shutdown_handler');
@@ -405,15 +417,6 @@ $IN =& load_class('Input', 'core');
  */
 $LANG =& load_class('Lang', 'core');
 
-
-///*
-// * ------------------------------------------------------
-// *  Load the Emerald_model ORM class
-// * ------------------------------------------------------
-// */
-$EMERALD_MODEL =& load_class('Emerald_model', 'core');
-
-
 /*
  * ------------------------------------------------------
  *  Load the app controller and local controller
@@ -475,21 +478,76 @@ if (empty($class) OR ! file_exists(APPPATH . 'controllers/' . $RTR->directory . 
 {
     require_once(APPPATH . 'controllers/' . $RTR->directory . $class . '.php');
 
-    if ( ! class_exists($class, FALSE) OR $method[0] === '_' OR method_exists('CI_Controller', $method))
+    if ( ! class_exists($class, FALSE) or $method[0] === '_' or method_exists('CI_Controller', $method))
     {
         $e404 = TRUE;
     } elseif (method_exists($class, '_remap'))
     {
         $params = [$method, array_slice($URI->rsegments, 2)];
         $method = '_remap';
-    }
-    // WARNING: It appears that there are issues with is_callable() even in PHP 5.2!
-    // Furthermore, there are bug reports and feature/change requests related to it
-    // that make it unreliable to use in this context. Please, DO NOT change this
-    // work-around until a better alternative is available.
-    elseif ( ! in_array(strtolower($method), array_map('strtolower', get_class_methods($class)), TRUE))
+    } elseif ( ! method_exists($class, $method))
     {
         $e404 = TRUE;
+    } /**
+     * DO NOT CHANGE THIS, NOTHING ELSE WORKS!
+     *
+     * - method_exists() returns true for non-public methods, which passes the previous elseif
+     * - is_callable() returns false for PHP 4-style constructors, even if there's a __construct()
+     * - method_exists($class, '__construct') won't work because CI_Controller::__construct() is inherited
+     * - People will only complain if this doesn't work, even though it is documented that it shouldn't.
+     *
+     * ReflectionMethod::isConstructor() is the ONLY reliable check,
+     * knowing which method will be executed as a constructor.
+     */
+    elseif ( ! is_callable([$class, $method]))
+    {
+        $reflection = new ReflectionMethod($class, $method);
+        if ( ! $reflection->isPublic() or $reflection->isConstructor())
+        {
+            $e404 = TRUE;
+        }
+    }
+}
+
+if (defined('CLI_IGNITER') && $e404)
+{
+    $cli_igniter_controller = BASEPATH . 'controllers/' . $RTR->directory . $class . '.php';
+
+    if (file_exists($cli_igniter_controller))
+    {
+
+        require_once $cli_igniter_controller;
+        $e404 = FALSE;
+
+        if ( ! class_exists($class, FALSE) or $method[0] === '_' or method_exists('CI_Controller', $method))
+        {
+            $e404 = TRUE;
+        } elseif (method_exists($class, '_remap'))
+        {
+            $params = [$method, array_slice($URI->rsegments, 2)];
+            $method = '_remap';
+        } elseif ( ! method_exists($class, $method))
+        {
+            $e404 = TRUE;
+        } /**
+         * DO NOT CHANGE THIS, NOTHING ELSE WORKS!
+         *
+         * - method_exists() returns true for non-public methods, which passes the previous elseif
+         * - is_callable() returns false for PHP 4-style constructors, even if there's a __construct()
+         * - method_exists($class, '__construct') won't work because CI_Controller::__construct() is inherited
+         * - People will only complain if this doesn't work, even though it is documented that it shouldn't.
+         *
+         * ReflectionMethod::isConstructor() is the ONLY reliable check,
+         * knowing which method will be executed as a constructor.
+         */
+        elseif ( ! is_callable([$class, $method]))
+        {
+            $reflection = new ReflectionMethod($class, $method);
+            if ( ! $reflection->isPublic() or $reflection->isConstructor())
+            {
+                $e404 = TRUE;
+            }
+        }
     }
 }
 

@@ -137,17 +137,17 @@ class CI_Input {
 	 */
 	public function __construct()
 	{
-		$this->_allow_get_array		= (config_item('allow_get_array') === TRUE);
-		$this->_enable_xss		= (config_item('global_xss_filtering') === TRUE);
-		$this->_enable_csrf		= (config_item('csrf_protection') === TRUE);
-		$this->_standardize_newlines	= (bool) config_item('standardize_newlines');
+        $this->_allow_get_array = (config_item('allow_get_array') !== FALSE);
+        $this->_enable_xss = (config_item('global_xss_filtering') === TRUE);
+        $this->_enable_csrf = (config_item('csrf_protection') === TRUE);
+        $this->_standardize_newlines = (bool)config_item('standardize_newlines');
 
-		$this->security =& load_class('Security', 'core');
+        $this->security =& load_class('Security', 'core');
 
-		// Do we need the UTF-8 class?
-		if (UTF8_ENABLED === TRUE)
-		{
-			$this->uni =& load_class('Utf8', 'core');
+        // Do we need the UTF-8 class?
+        if (UTF8_ENABLED === TRUE)
+        {
+            $this->uni =& load_class('Utf8', 'core');
 		}
 
 		// Sanitize global arrays
@@ -521,7 +521,7 @@ class CI_Input {
 						$netaddr = explode(':', str_replace('::', str_repeat(':', 9 - substr_count($netaddr, ':')), $netaddr));
 						for ($j = 0; $j < 8; $j++)
 						{
-							$netaddr[$i] = intval($netaddr[$j], 16);
+                            $netaddr[$j] = intval($netaddr[$j], 16);
 						}
 					}
 					else
@@ -827,26 +827,40 @@ class CI_Input {
 	// --------------------------------------------------------------------
 
 	/**
-	 * Is AJAX request?
-	 *
-	 * Test to see if a request contains the HTTP_X_REQUESTED_WITH header.
-	 *
-	 * @return 	bool
-	 */
-	public function is_ajax_request()
-	{
-		return ( ! empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
-	}
+     * Is AJAX request?
+     *
+     * Test to see if a request contains the HTTP_X_REQUESTED_WITH header.
+     *
+     * @return    bool
+     */
+    public function is_ajax_request()
+    {
+        return ( ! empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+    }
 
-	// --------------------------------------------------------------------
+    // --------------------------------------------------------------------
 
-	/**
-	 * Is CLI request?
-	 *
-	 * Test to see if a request was made from the command line.
-	 *
-	 * @deprecated	3.0.0	Use is_cli() instead
-	 * @return	bool
+    /**
+     * Is PJAX request?
+     *
+     * Test to see if a request contains the HTTP_X_PJAX header.
+     *
+     * @return bool
+     */
+    public function is_pjax_request(): bool
+    {
+        return (bool)($this->server('HTTP_X_PJAX') === 'true');
+    }
+
+    // --------------------------------------------------------------------
+
+    /**
+     * Is CLI request?
+     *
+     * Test to see if a request was made from the command line.
+     *
+     * @deprecated    3.0.0    Use is_cli() instead
+     * @return    bool
 	 */
 	public function is_cli_request()
 	{

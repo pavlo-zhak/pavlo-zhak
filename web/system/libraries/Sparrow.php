@@ -18,6 +18,7 @@ class Sparrow {
     protected $offset;
     protected $for_update;
     protected $sql;
+    protected $unionSql;
 
     protected $db;
     protected $db_type;
@@ -37,8 +38,8 @@ class Sparrow {
         'memcached', 'memcache', 'xcache'
     ];
 
-    public $last_query;
-    public $num_rows;
+    private $last_query;
+    private $num_rows;
     private $insert_id;
     private $affected_rows;
     private $affected;
@@ -55,11 +56,27 @@ class Sparrow {
     }
 
     /**
-     * @return bool
+     * @return string
      */
-    public function is_affected(): bool
+    public function get_last_query(): string
     {
-        return $this->affected;
+        return $this->last_query;
+    }
+
+    /**
+     * @return int
+     */
+    public function get_num_rows(): int
+    {
+        return $this->num_rows;
+    }
+
+    /**
+     * @return int
+     */
+    public function get_insert_id(): int
+    {
+        return $this->insert_id;
     }
 
     /**
@@ -71,12 +88,13 @@ class Sparrow {
     }
 
     /**
-     * @return int
+     * @return bool
      */
-    public function get_insert_id(): int
+    public function is_affected(): bool
     {
-        return $this->insert_id;
+        return $this->affected;
     }
+
 
     /*** Core Methods ***/
 
@@ -241,7 +259,7 @@ class Sparrow {
             }
             if (empty($join))
             {
-                $join = ($field{0} == '|') ? ' OR' : ' AND';
+                $join = ($field[0] == '|') ? ' OR' : ' AND';
             }
             if (is_array($value))
             {
@@ -601,6 +619,29 @@ class Sparrow {
             $this->offset,
             $this->for_update
         ]);
+
+        return $this;
+    }
+
+
+    /**
+     * Builds a union query
+     *
+     * @param bool $all
+     * @return $this
+     */
+    public function union(bool $all = FALSE): Sparrow
+    {
+        $union = ' ';
+        if (!empty($this->unionSql)) {
+            $union = ' UNION ';
+        }
+
+        if ($all) {
+            $union .= ' ALL ';
+        }
+
+        $this->unionSql .= $union . $this->getSql();
 
         return $this;
     }
@@ -1149,6 +1190,12 @@ class Sparrow {
             {
                 return $result;
             }
+        }
+
+        if ( ! empty($this->unionSql))
+        {
+            $this->sql = $this->unionSql;
+            $this->unionSql = '';
         }
 
         $result = NULL;
@@ -1713,7 +1760,7 @@ class Sparrow {
         // Connection string
         if (is_string($cache))
         {
-            if ($cache{0} == '.' || $cache{0} == '/')
+            if ($cache[0] == '.' || $cache[0] == '/')
             {
                 $this->cache = $cache;
                 $this->cache_type = 'file';

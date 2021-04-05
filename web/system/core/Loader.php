@@ -6,7 +6,7 @@
  *
  * This content is released under the MIT License (MIT)
  *
- * Copyright (c) 2014 - 2016, British Columbia Institute of Technology
+ * Copyright (c) 2014 - 2019, British Columbia Institute of Technology
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,8 +29,8 @@
  * @package	CodeIgniter
  * @author	EllisLab Dev Team
  * @copyright	Copyright (c) 2008 - 2014, EllisLab, Inc. (https://ellislab.com/)
- * @copyright	Copyright (c) 2014 - 2016, British Columbia Institute of Technology (http://bcit.ca/)
- * @license	http://opensource.org/licenses/MIT	MIT License
+ * @copyright	Copyright (c) 2014 - 2019, British Columbia Institute of Technology (https://bcit.ca/)
+ * @license	https://opensource.org/licenses/MIT	MIT License
  * @link	https://codeigniter.com
  * @since	Version 1.0.0
  * @filesource
@@ -222,15 +222,15 @@ class CI_Loader {
 	// --------------------------------------------------------------------
 
 	/**
-	 * Model Loader
-	 *
-	 * Loads and instantiates models.
-	 *
-	 * @param	string	$model		Model name
-	 * @param	string	$name		An optional object name to assign to
-	 * @param	bool	$db_conn	An optional database connection configuration to initialize
-	 * @return	object
-	 */
+     * Model Loader
+     *
+     * Loads and instantiates models.
+     *
+     * @param string|array $model Model name
+     * @param string $name An optional object name to assign to
+     * @param bool $db_conn An optional database connection configuration to initialize
+     * @return    object
+     */
 	public function model($model, $name = '', $db_conn = FALSE)
 	{
 		if (empty($model))
@@ -283,42 +283,30 @@ class CI_Loader {
 			}
 
 			$this->database($db_conn, FALSE, TRUE);
-		}
+        }
 
-		// Note: All of the code under this condition used to be just:
-		//
-		//       load_class('Model', 'core');
-		//
-		//       However, load_class() instantiates classes
-		//       to cache them for later use and that prevents
-		//       MY_Model from being an abstract class and is
-		//       sub-optimal otherwise anyway.
-		if ( ! class_exists('CI_Model', FALSE))
-		{
-			$app_path = APPPATH.'core'.DIRECTORY_SEPARATOR;
-			if (file_exists($app_path.'Model.php'))
-			{
-				require_once($app_path.'Model.php');
-				if ( ! class_exists('CI_Model', FALSE))
-				{
-					throw new RuntimeException($app_path."Model.php exists, but doesn't declare class CI_Model");
-				}
-			}
-			elseif ( ! class_exists('CI_Model', FALSE))
-			{
-				require_once(BASEPATH.'core'.DIRECTORY_SEPARATOR.'Model.php');
-			}
+        // Note: All of the code under this condition used to be just:
+        //
+        //       load_class('Model', 'core');
+        //
+        //       However, load_class() instantiates classes
+        //       to cache them for later use and that prevents
+        //       MY_Model from being an abstract class and is
+        //       sub-optimal otherwise anyway.
+        if ( ! class_exists('System\Core\CI_Model'))
+        {
+            $app_path = APPPATH . 'core' . DIRECTORY_SEPARATOR;
 
-			$class = config_item('subclass_prefix').'Model';
-			if (file_exists($app_path.$class.'.php'))
-			{
-				require_once($app_path.$class.'.php');
-				if ( ! class_exists($class, FALSE))
-				{
-					throw new RuntimeException($app_path.$class.".php exists, but doesn't declare class ".$class);
-				}
-			}
-		}
+            $class = config_item('subclass_prefix') . 'Model';
+            if (file_exists($app_path . $class . '.php'))
+            {
+                require_once($app_path . $class . '.php');
+                if ( ! class_exists($class, FALSE))
+                {
+                    throw new RuntimeException($app_path . $class . ".php exists, but doesn't declare class " . $class);
+                }
+            }
+        }
 
 		$model = ucfirst($model);
 		if ( ! class_exists($model, FALSE))
@@ -334,20 +322,19 @@ class CI_Loader {
 				if ( ! class_exists($model, FALSE))
 				{
 					throw new RuntimeException($mod_path."models/".$path.$model.".php exists, but doesn't declare class ".$model);
-				}
+                }
 
-				break;
-			}
+                break;
+            }
 
-			if ( ! class_exists($model, FALSE))
-			{
-				throw new RuntimeException('Unable to locate the model you have specified: '.$model);
-			}
-		}
-		elseif ( ! is_subclass_of($model, 'CI_Model'))
-		{
-			throw new RuntimeException("Class ".$model." already exists and doesn't extend CI_Model");
-		}
+            if ( ! class_exists($model, FALSE))
+            {
+                throw new RuntimeException('Unable to locate the model you have specified: ' . $model);
+            }
+        } elseif ( ! is_subclass_of($model, 'System\Core\CI_Model'))
+        {
+            throw new RuntimeException("Class " . $model . " already exists and doesn't extend CI_Model");
+        }
 
 		$this->_ci_models[] = $name;
 		$CI->$name = new $model();
@@ -486,7 +473,7 @@ class CI_Loader {
 	 */
 	public function view($view, $vars = array(), $return = FALSE)
 	{
-		return $this->_ci_load(array('_ci_view' => $view, '_ci_vars' => $this->_ci_object_to_array($vars), '_ci_return' => $return));
+		return $this->_ci_load(array('_ci_view' => $view, '_ci_vars' => $this->_ci_prepare_view_vars($vars), '_ci_return' => $return));
 	}
 
 	// --------------------------------------------------------------------
@@ -519,22 +506,16 @@ class CI_Loader {
 	 */
 	public function vars($vars, $val = '')
 	{
-		if (is_string($vars))
-		{
-			$vars = array($vars => $val);
-		}
+        $vars = is_string($vars)
+            ? [$vars => $val]
+            : $this->_ci_prepare_view_vars($vars);
 
-		$vars = $this->_ci_object_to_array($vars);
+        foreach ($vars as $key => $val)
+        {
+            $this->_ci_cached_vars[$key] = $val;
+        }
 
-		if (is_array($vars) && count($vars) > 0)
-		{
-			foreach ($vars as $key => $val)
-			{
-				$this->_ci_cached_vars[$key] = $val;
-			}
-		}
-
-		return $this;
+        return $this;
 	}
 
 	// --------------------------------------------------------------------
@@ -1406,6 +1387,29 @@ class CI_Loader {
 	{
 		return is_object($object) ? get_object_vars($object) : $object;
 	}
+
+	/** Prepare variables for _ci_vars, to be later extract()-ed inside views
+     *
+     * Converts objects to associative arrays and filters-out internal
+     * variable names (i.e. keys prefixed with '_ci_').
+     *
+     * @param mixed $vars
+     * @return    array
+     */
+    protected function _ci_prepare_view_vars($vars)
+    {
+        if (!is_array($vars)) {
+            $vars = is_object($vars) ? get_object_vars($vars) : [];
+        }
+
+        // --------------------------------------------------------------------
+        foreach (array_keys($vars) as $key) {
+            if (strncmp($key, '_ci_', 4) === 0) {
+                unset($vars[$key]);
+            }
+        }
+        return $vars;
+    }
 
 	// --------------------------------------------------------------------
 

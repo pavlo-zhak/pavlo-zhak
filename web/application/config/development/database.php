@@ -75,7 +75,7 @@ $query_builder = TRUE;
 
 $db['default'] = array(
     'dsn' => '',
-    'hostname' => 'mysql',
+    'hostname' => 'frozeneon-mysql',
     'username' => 'dev',
     'password' => 'dev',
     'database' => 'test_task',
